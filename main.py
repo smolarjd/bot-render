@@ -155,6 +155,25 @@ async def queue_cmd(interaction: discord.Interaction):
     q = queues[interaction.guild.id]
     text = "\n".join([f"{i+1}. {s['title']}" for i, s in enumerate(q)])
     await interaction.response.send_message(f"**Kolejka ({len(q)}):**\n{text}", ephemeral=True)
+import threading
+from http.server import HTTPServer, BaseHTTPRequestHandler
+import os
+
+class HealthCheck(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header("Content-type", "text/plain")
+        self.end_headers()
+        self.wfile.write(b"OK")
+
+def run_health_server():
+    port = int(os.getenv("PORT", 10000))  # Render wymaga PORT
+    server = HTTPServer(("", port), HealthCheck)
+    server.serve_forever()
+
+if __name__ == "__main__":
+    threading.Thread(target=run_health_server, daemon=True).start()
+    bot.run(os.getenv("DISCORD_TOKEN"))
 
 
 bot.run(TOKEN)
