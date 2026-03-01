@@ -1,7 +1,7 @@
 # nixpacks.toml
 
 [phases.setup]
-aptPkgs = ['ffmpeg']
+nixPkgs = ["ffmpeg"]
 
 [phases.build]
 dependsOn = ['setup']
@@ -15,4 +15,5 @@ cmd = 'export PATH="/usr/bin:$PATH" && python main.py'   # ← kluczowe: explici
 
 [providers]
 python = { version = "3.11" }
+
 
