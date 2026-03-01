@@ -53,7 +53,12 @@ async def play_next(guild: discord.Guild):
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
             real_url = info["url"]
+import shutil
 
+ffmpeg_path = shutil.which("ffmpeg")
+print(f"[DEBUG] Ścieżka do ffmpeg: {ffmpeg_path}")
+if not ffmpeg_path:
+    print("[ERROR] FFmpeg nadal nie znaleziony w PATH!")
         vc.play(
             discord.FFmpegPCMAudio(
                 real_url,
@@ -210,6 +215,7 @@ if __name__ == "__main__":
 
 
 bot.run(TOKEN)
+
 
 
 
