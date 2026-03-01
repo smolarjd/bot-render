@@ -13,7 +13,7 @@ TOKEN = os.getenv("DISCORD_TOKEN")          # albo wklej na sztywno (nie polecam
 intents = discord.Intents.default()
 intents.message_content = True
 intents.voice_states = True
-intents.members = True
+intents.members = False
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 tree = bot.tree
@@ -177,3 +177,4 @@ if __name__ == "__main__":
 
 
 bot.run(TOKEN)
+
