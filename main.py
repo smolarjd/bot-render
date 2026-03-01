@@ -6,6 +6,8 @@ import asyncio
 from collections import deque
 import os
 from dotenv import load_dotenv
+import shutil
+print("FFmpeg path:", shutil.which("ffmpeg") or "NIE ZNALEZIONO")
 
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")          # albo wklej na sztywno (nie polecam)
@@ -215,6 +217,7 @@ if __name__ == "__main__":
 
 
 bot.run(TOKEN)
+
 
 
 
