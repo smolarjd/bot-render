@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: moj-muzyk-bot
+    env: python
+    plan: free                   # zmień na starter jeśli chcesz Background Worker
+    buildCommand: pip install -r requirements.txt
+    startCommand: python main.py
+    autoDeploy: true
+    healthCheckPath: /health     # ← sztuczka na Free – patrz niżej
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11                # lub 3.12 – nowsza wersja ffmpeg
