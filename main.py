@@ -24,19 +24,17 @@ tree = bot.tree
 queues = {}           # guild_id -> deque[dict]
 
 ydl_opts = {
-    "format": "bestaudio/best",
-    "noplaylist": True,
-    "quiet": True,
-    "default_search": "ytsearch",
-    "extract_flat": True,
-    "socket_timeout": 15,          # ← nowe                # ← nowe
-    "continuedl": True,            # ← nowe
-    "retries": 10,
-    "fragment_retries": 10,
-    "socket_timeout": 30,
-    "continuedl": True,
-    "cookiefile": "cookies.txt",          # ← DODAJ
-    "jsruntime": "deno",
+    'format': 'bestaudio/best',
+    'noplaylist': True,
+    'quiet': True,
+    'default_search': 'ytsearch',
+    'extract_flat': True,
+    'retries': 10,
+    'fragment_retries': 10,
+    'socket_timeout': 30,
+    'continuedl': True,
+    'cookiefile': 'cookies.txt',
+    'jsruntime': 'deno',
 }
 
 async def play_next(guild: discord.Guild):
@@ -217,6 +215,7 @@ if __name__ == "__main__":
 
 
 bot.run(TOKEN)
+
 
 
 
