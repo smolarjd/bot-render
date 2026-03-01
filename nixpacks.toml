@@ -1,12 +1,17 @@
 # nixpacks.toml
 
 [phases.setup]
-aptPkgs = ['ffmpeg','deno']
+aptPkgs = ['ffmpeg']
 
 [phases.build]
 dependsOn = ['setup']
-cmds = ['pip install --no-cache-dir -r requirements.txt']
+cmds = [
+  'pip install --no-cache-dir -r requirements.txt',
+  'ffmpeg -version || echo "ffmpeg nie znaleziono po instalacji!"'   # ← debug w logach build
+]
 
-[start]
+[phases.start]
+cmd = 'export PATH="/usr/bin:$PATH" && python main.py'   # ← kluczowe: explicit PATH
 
-cmd = 'python main.py'
+[providers]
+python = { version = "3.11" }
