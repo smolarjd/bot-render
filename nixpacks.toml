@@ -1,19 +1,20 @@
 # nixpacks.toml
 
-[phases.setup]
+[setup]
 nixPkgs = ["ffmpeg"]
 
-[phases.build]
+[build]
 dependsOn = ['setup']
 cmds = [
   'pip install --no-cache-dir -r requirements.txt',
   'ffmpeg -version || echo "ffmpeg nie znaleziono po instalacji!"'   # ← debug w logach build
 ]
 
-[phases.start]
-cmd = 'export PATH="/usr/bin:$PATH" && python main.py'   # ← kluczowe: explicit PATH
+[start]
+cmd = 'export PATH="/nix/var/nix/profiles/default/bin:/usr/bin:$PATH" && python main.py'
 
 [providers]
 python = { version = "3.11" }
+
 
 
