@@ -27,8 +27,13 @@ ydl_opts = {
     "quiet": True,
     "default_search": "ytsearch",
     "extract_flat": True,
+    "socket_timeout": 15,          # ← nowe                # ← nowe
+    "continuedl": True,            # ← nowe
+    "retries": 10,
+    "fragment_retries": 10,
+    "socket_timeout": 30,
+    "continuedl": True,
 }
-
 
 async def play_next(guild: discord.Guild):
     if guild.id not in queues or not queues[guild.id]:
@@ -88,44 +93,36 @@ async def play(interaction: discord.Interaction, query: str):
     await interaction.response.defer()
 
     entries = []
-    error_msg = None
-
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         try:
             info = ydl.extract_info(query, download=False)
             if "entries" in info:
-                entries = info["entries"][:10]  # playlist lub wyszukiwanie
+                entries = info["entries"][:10]
             else:
-                entries = [info]  # pojedynczy link
+                entries = [info]
         except Exception as e:
-            error_msg = f"Błąd yt-dlp: {str(e)[:100]}..."
-            print(f"yt-dlp error: {e}")
+            print(f"extract_info błąd: {e}")
+            # Fallback na wyszukiwanie
+            try:
+                search_info = ydl.extract_info(f"ytsearch5:{query}", download=False)
+                entries = search_info.get("entries", [])[:5]
+            except Exception as se:
+                print(f"ytsearch fallback błąd: {se}")
 
     if not entries:
-        # Druga próba – czysta wyszukiwanie
-        try:
-            search = ydl.extract_info(f"ytsearch5:{query}", download=False)  # ytsearch5 = max 5 wyników
-            entries = search.get("entries", [])[:5]
-        except Exception as e:
-            print(f"Search fallback error: {e}")
-
-    if not entries:
-        msg = "Nic nie znaleziono 😔" 
-        if error_msg:
-            msg += f"\n({error_msg})"
-        return await interaction.followup.send(msg)
+        return await interaction.followup.send("Nic nie znaleziono lub błąd wyszukiwania 😔 (sprawdź nazwę/link)")
 
     if interaction.guild.id not in queues:
         queues[interaction.guild.id] = deque()
 
     added = 0
     for entry in entries:
-        # Bezpieczne pobranie – jeśli brak klucza, pomijamy lub fallback
-        url = entry.get("url") or entry.get("webpage_url") or entry.get("id")
-        title = entry.get("title") or entry.get("fulltitle") or "??? (brak tytułu)"
+        # Bezpieczne wyciągnięcie – fallback jeśli brak klucza
+        url = entry.get("url") or entry.get("webpage_url") or entry.get("id") or entry.get("webpage_url_basename")
+        title = entry.get("title") or entry.get("fulltitle") or entry.get("alt_title") or f"[Bez tytułu] {entry.get('id', '???')}"
 
         if not url:
-            continue  # pomijamy bezsensowne entry
+            continue  # pomiń bezsensowne wpisy
 
         queues[interaction.guild.id].append({
             "url": url,
@@ -133,16 +130,16 @@ async def play(interaction: discord.Interaction, query: str):
             "channel": interaction.channel
         })
         added += 1
+        print(f"Dodano: {title} | URL: {url}")  # ← debug w logach Render
 
     msg = f"Dodałem **{added}** utwór(ów) do kolejki!"
     if added == 0:
-        msg = "Żaden utwór nie został dodany (uszkodzone wyniki z YouTube 😢)"
+        msg += "\n(żaden wynik nie miał poprawnego URL-a – spróbuj dokładniejszej nazwy)"
 
-    if not vc.is_playing() and not vc.is_paused() and added > 0:
+    if added > 0 and not vc.is_playing() and not vc.is_paused():
         await play_next(interaction.guild)
 
     await interaction.followup.send(msg)
-
 
 @tree.command(name="skip", description="Pomija aktualny utwór")
 async def skip(interaction: discord.Interaction):
@@ -196,5 +193,6 @@ if __name__ == "__main__":
 
 
 bot.run(TOKEN)
+
 
 
