@@ -11,5 +11,5 @@ services:
       - key: PYTHON_VERSION
 
         value: 3.11 
-        [phases.setup]
-    aptPkgs: ['ffmpeg', 'deno']
+
+
