@@ -48,35 +48,35 @@ async def play_next(guild: discord.Guild):
     song = queues[guild.id].popleft()
     url = song["url"]
     title = song["title"]
+    last_played_url[guild.id] = url
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
             real_url = info["url"]
-import shutil
 
-ffmpeg_path = shutil.which("ffmpeg")
-print(f"[DEBUG] Ścieżka do ffmpeg: {ffmpeg_path}")
-if not ffmpeg_path:
-    print("[ERROR] FFmpeg nadal nie znaleziony w PATH!")
+        # debug ffmpeg
+        import shutil
+        ffmpeg_path = shutil.which("ffmpeg")
+        print(f"[DEBUG] FFmpeg path: {ffmpeg_path or 'NIE ZNALEZIONO!'}")
+
         vc.play(
             discord.FFmpegPCMAudio(
                 real_url,
-                executable="ffmpeg",
                 before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5",
                 options="-vn"
             ),
-            after=lambda e: asyncio.run_coroutine_threadsafe(play_next(guild), bot.loop)
+            after=lambda e: asyncio.run_coroutine_threadsafe(
+                auto_play_next_if_needed(guild), bot.loop
+            )
         )
 
-        channel = song.get("channel")
-        if channel:
-            await channel.send(f"Teraz gram → **{title}**")
+        if song.get("channel"):
+            await song["channel"].send(f"Teraz gra → **{title}**")
 
     except Exception as e:
         print(f"Błąd odtwarzania: {e}")
-        await play_next(guild)
-
+        await play_next(guild)  # rekurencja – ostrożnie z nią przy głębokich błędach
 
 @bot.event
 async def on_ready():
@@ -215,6 +215,7 @@ if __name__ == "__main__":
 
 
 bot.run(TOKEN)
+
 
 
 
