@@ -1,0 +1,26 @@
+# fly.toml
+app = "moj-muzyk-bot"          # ← zmień na swoją unikalną nazwę (flyctl launch zrobi to automatycznie)
+
+primary_region = "waw"         # Warszawa – niski ping dla Polski/Europy
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  # Możesz dodać zmienne tutaj lub przez fly secrets
+  # PYTHONUNBUFFERED = "1"     # lepsze logi
+
+[processes]
+  app = ["python", "main.py"]  # nie potrzeba http serwera – bot nie nasłuchuje na porcie
+
+[http_service]
+  # Dla bota Discord NIE POTRZEBNY serwis HTTP → wyłączamy
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = true      # oszczędzanie darmowych limitów
+  auto_start_machines = true
+  min_machines_running = 0       # bot działa bez http
+
+[experimental]
+  allowed_public_ports = []      # brak portów publicznych
+  auto_rollback = true
