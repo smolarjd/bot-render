@@ -34,7 +34,6 @@ ydl_opts = {
     'socket_timeout': 30,
     'continuedl': True,
     'cookiefile': 'cookies.txt',
-    'jsruntime': 'deno',
 }
 
 async def play_next(guild: discord.Guild):
@@ -215,6 +214,7 @@ if __name__ == "__main__":
 
 
 bot.run(TOKEN)
+
 
 
 
