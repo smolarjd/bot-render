@@ -15,3 +15,4 @@ cmd = 'export PATH="/usr/bin:$PATH" && python main.py'   # ← kluczowe: explici
 
 [providers]
 python = { version = "3.11" }
+
