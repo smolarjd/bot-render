@@ -1,11 +1,12 @@
 # nixpacks.toml
 
 [phases.setup]
-aptPkgs = ['ffmpeg']
+aptPkgs = ['ffmpeg','deno']
 
 [phases.build]
 dependsOn = ['setup']
 cmds = ['pip install --no-cache-dir -r requirements.txt']
 
 [start]
+
 cmd = 'python main.py'
