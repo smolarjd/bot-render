@@ -92,37 +92,47 @@ async def play(interaction: discord.Interaction, query: str):
 
     await interaction.response.defer()
 
+    print(f"[PLAY] Użytkownik: {interaction.user} | Query: {query}")
+
     entries = []
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         try:
             info = ydl.extract_info(query, download=False)
+            print(f"[PLAY] extract_info sukces – keys w info: {list(info.keys())}")
             if "entries" in info:
                 entries = info["entries"][:10]
+                print(f"[PLAY] Znaleziono playlistę/wyszukiwanie – {len(entries)} entries")
             else:
                 entries = [info]
+                print("[PLAY] Pojedynczy film")
         except Exception as e:
-            print(f"extract_info błąd: {e}")
-            # Fallback na wyszukiwanie
+            print(f"[PLAY] extract_info błąd: {str(e)[:200]}")
+            # Fallback wyszukiwanie
             try:
                 search_info = ydl.extract_info(f"ytsearch5:{query}", download=False)
                 entries = search_info.get("entries", [])[:5]
+                print(f"[PLAY] Fallback ytsearch5 – {len(entries)} wyników")
             except Exception as se:
-                print(f"ytsearch fallback błąd: {se}")
+                print(f"[PLAY] Fallback błąd: {str(se)[:200]}")
 
     if not entries:
-        return await interaction.followup.send("Nic nie znaleziono lub błąd wyszukiwania 😔 (sprawdź nazwę/link)")
+        print("[PLAY] Brak entries po wszystkich próbach")
+        return await interaction.followup.send("Nic nie znaleziono lub YouTube zablokował zapytanie 😔")
 
     if interaction.guild.id not in queues:
         queues[interaction.guild.id] = deque()
+        print(f"[PLAY] Utworzono nową kolejkę dla guild {interaction.guild.id}")
 
     added = 0
-    for entry in entries:
-        # Bezpieczne wyciągnięcie – fallback jeśli brak klucza
-        url = entry.get("url") or entry.get("webpage_url") or entry.get("id") or entry.get("webpage_url_basename")
-        title = entry.get("title") or entry.get("fulltitle") or entry.get("alt_title") or f"[Bez tytułu] {entry.get('id', '???')}"
+    for i, entry in enumerate(entries):
+        url = entry.get("url") or entry.get("webpage_url") or entry.get("id")
+        title = entry.get("title") or entry.get("fulltitle") or f"[Brak tytułu] #{i+1}"
+
+        print(f"[PLAY] Entry {i+1}: title={title[:60]} | url={url[:80] if url else 'BRAK URL'}")
 
         if not url:
-            continue  # pomiń bezsensowne wpisy
+            print(f"[PLAY] Pomijam entry {i+1} – brak URL-a")
+            continue
 
         queues[interaction.guild.id].append({
             "url": url,
@@ -130,14 +140,19 @@ async def play(interaction: discord.Interaction, query: str):
             "channel": interaction.channel
         })
         added += 1
-        print(f"Dodano: {title} | URL: {url}")  # ← debug w logach Render
+        print(f"[PLAY] Dodano do kolejki: {title[:60]}")
+
+    print(f"[PLAY] Łącznie dodano: {added} | Aktualna długość kolejki: {len(queues[interaction.guild.id])}")
 
     msg = f"Dodałem **{added}** utwór(ów) do kolejki!"
     if added == 0:
-        msg += "\n(żaden wynik nie miał poprawnego URL-a – spróbuj dokładniejszej nazwy)"
+        msg += "\n(żaden wynik nie miał poprawnego URL – problem z YouTube / yt-dlp)"
 
     if added > 0 and not vc.is_playing() and not vc.is_paused():
+        print("[PLAY] Startuję odtwarzanie...")
         await play_next(interaction.guild)
+    else:
+        print("[PLAY] Nie startuję odtwarzania (już coś gra lub nic nie dodano)")
 
     await interaction.followup.send(msg)
 
@@ -193,6 +208,7 @@ if __name__ == "__main__":
 
 
 bot.run(TOKEN)
+
 
 
 
