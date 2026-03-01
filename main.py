@@ -76,50 +76,69 @@ async def on_ready():
         print(e)
 
 
-@tree.command(name="play", description="Odtwarza piosenkę lub dodaje do kolejki")
-@app_commands.describe(query="Nazwa / link YouTube / Spotify itd.")
+@tree.command(name="play", description="Odtwarza utwór / dodaje do kolejki")
+@app_commands.describe(query="Nazwa / link YouTube")
 async def play(interaction: discord.Interaction, query: str):
     if not interaction.user.voice:
         return await interaction.response.send_message("Musisz być na kanale głosowym!", ephemeral=True)
 
     channel = interaction.user.voice.channel
-
-    if not interaction.guild.voice_client:
-        vc = await channel.connect()
-    else:
-        vc = interaction.guild.voice_client
+    vc = interaction.guild.voice_client or await channel.connect()
 
     await interaction.response.defer()
+
+    entries = []
+    error_msg = None
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         try:
             info = ydl.extract_info(query, download=False)
-            if "entries" in info:  # playlist
-                entries = info["entries"][:10]  # max 10 z playlisty
+            if "entries" in info:
+                entries = info["entries"][:10]  # playlist lub wyszukiwanie
             else:
-                entries = [info]
-        except:
-            # wyszukiwanie
-            search = ydl.extract_info(f"ytsearch:{query}", download=False)
-            entries = [search["entries"][0]] if search.get("entries") else []
+                entries = [info]  # pojedynczy link
+        except Exception as e:
+            error_msg = f"Błąd yt-dlp: {str(e)[:100]}..."
+            print(f"yt-dlp error: {e}")
 
     if not entries:
-        return await interaction.followup.send("Nic nie znaleziono... 😔")
+        # Druga próba – czysta wyszukiwanie
+        try:
+            search = ydl.extract_info(f"ytsearch5:{query}", download=False)  # ytsearch5 = max 5 wyników
+            entries = search.get("entries", [])[:5]
+        except Exception as e:
+            print(f"Search fallback error: {e}")
+
+    if not entries:
+        msg = "Nic nie znaleziono 😔" 
+        if error_msg:
+            msg += f"\n({error_msg})"
+        return await interaction.followup.send(msg)
 
     if interaction.guild.id not in queues:
         queues[interaction.guild.id] = deque()
 
-    added_count = 0
+    added = 0
     for entry in entries:
+        # Bezpieczne pobranie – jeśli brak klucza, pomijamy lub fallback
+        url = entry.get("url") or entry.get("webpage_url") or entry.get("id")
+        title = entry.get("title") or entry.get("fulltitle") or "??? (brak tytułu)"
+
+        if not url:
+            continue  # pomijamy bezsensowne entry
+
         queues[interaction.guild.id].append({
-            "url": entry["url"],
-            "title": entry["title"],
+            "url": url,
+            "title": title,
             "channel": interaction.channel
         })
-        added_count += 1
+        added += 1
 
-    msg = f"Dodałem **{added_count}** utwór(ów) do kolejki!"
-    if not vc.is_playing() and not vc.is_paused():
+    msg = f"Dodałem **{added}** utwór(ów) do kolejki!"
+    if added == 0:
+        msg = "Żaden utwór nie został dodany (uszkodzone wyniki z YouTube 😢)"
+
+    if not vc.is_playing() and not vc.is_paused() and added > 0:
         await play_next(interaction.guild)
 
     await interaction.followup.send(msg)
@@ -177,4 +196,5 @@ if __name__ == "__main__":
 
 
 bot.run(TOKEN)
+
 
